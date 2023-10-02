@@ -119,7 +119,7 @@ def evaluate_hand(hand, community_cards):
     if three_kind:
         cards = [card for card in all_cards if card.rank == three_kind][:3]
         return (hand_rank_values['three-of-a-kind'], RANKS.index(three_kind), cards + top_k_cards([three_kind], 2))
-    
+
     pairs = sorted([rank for rank, count in rank_counts.items() if count == 2], reverse=True)
     if len(pairs) == 2:
         top_pair_cards = [card for card in all_cards if card.rank == pairs[0]][:2]
@@ -133,6 +133,10 @@ def evaluate_hand(hand, community_cards):
     return (hand_rank_values['high-card'], RANKS.index(all_cards[-1].rank), top_k_cards([], 5))
 
 def main():
+    total_games = 0
+    total_correct = 0
+    total_time = 0
+
     while True:
         player1_hand, player2_hand, community_cards = deal_cards()
 
@@ -143,6 +147,10 @@ def main():
         start_time = time.time()
         answer = input("Who wins? Enter '1' for Player 1, '2' for Player 2, 't' for tie: ")
         end_time = time.time()
+        time_taken = end_time - start_time
+        total_time += time_taken
+
+        total_games += 1
 
         p1_eval = evaluate_hand(player1_hand, community_cards)
         p2_eval = evaluate_hand(player2_hand, community_cards)
@@ -159,16 +167,24 @@ def main():
 
         if correct:
             print("\033[92mCorrect!\033[0m")
+            total_correct += 1
         else:
             print("\033[91mWrong!\033[0m")
         
-        print(f"Time taken: {end_time - start_time:.2f} seconds")
+        print(f"Time taken: {time_taken:.2f} seconds")
         print(f"Player 1's hand is: {p1_eval[0]} {' '.join(map(str, p1_eval[-1]))}")
         print(f"Player 2's hand is: {p2_eval[0]} {' '.join(map(str, p2_eval[-1]))}")
 
         play_again = input("Play again? (y/n): ")
         if play_again.lower() == 'n':
             break
+
+    print("\nGame Metrics:")
+    print(f"Total Games Played: {total_games}")
+    print(f"Total Correct Answers: {total_correct}")
+    print(f"Total Wrong Answers: {total_games - total_correct}")
+    print(f"Accuracy Rate: {(total_correct / total_games) * 100:.2f}%")
+    print(f"Average Time Taken: {total_time / total_games:.2f} seconds")
 
 if __name__ == "__main__":
     main()
