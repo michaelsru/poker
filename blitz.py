@@ -12,7 +12,15 @@ class Card:
         self.suit = suit
 
     def __str__(self):
+        if self.suit in ['♦', '♥']:
+            return f'\033[91m{self.rank}{self.suit}\033[0m'  # Red color for diamonds and hearts
         return f'{self.rank}{self.suit}'
+
+    def __lt__(self, other):
+        return RANKS.index(self.rank) < RANKS.index(other.rank)
+
+    def __gt__(self, other):
+        return RANKS.index(self.rank) > RANKS.index(other.rank)
 
 def deal_cards():
     deck = [Card(rank, suit) for rank in RANKS for suit in SUITS]
@@ -58,20 +66,33 @@ def evaluate_hand(hand, community_cards):
 
     is_straight = consecutive >= 5
 
-    # Straight Flush & Royal Flush
+    # Assigning numerical values to hand ranks for easy comparison
+    hand_rank_values = {
+        'royal-flush': 9,
+        'straight-flush': 8,
+        'four-of-a-kind': 7,
+        'full-house': 6,
+        'flush': 5,
+        'straight': 4,
+        'three-of-a-kind': 3,
+        'two-pair': 2,
+        'one-pair': 1,
+        'high-card': 0
+    }
+
+    # Adjusting return values for each hand type for tuple comparison
     if flush_suit and is_straight:
         flush_cards = [card for card in all_cards if card.suit == flush_suit]
         straight_flush_cards = sorted([card for card in flush_cards if RANKS.index(card.rank) >= RANKS.index(last_rank) and RANKS.index(card.rank) <= RANKS.index(last_rank) + 4], key=lambda card: RANKS.index(card.rank), reverse=True)
         
         if straight_flush_cards[0].rank == 'A':
-            return ('royal-flush', straight_flush_cards)
-        return ('straight-flush', straight_flush_cards[0].rank, straight_flush_cards)
+            return (hand_rank_values['royal-flush'], straight_flush_cards)
+        return (hand_rank_values['straight-flush'], RANKS.index(straight_flush_cards[0].rank), straight_flush_cards)
 
-    # Four of a Kind
     for rank, count in rank_counts.items():
         if count == 4:
             cards = [card for card in all_cards if card.rank == rank]
-            return ('four-of-a-kind', rank, cards + top_k_cards([rank], 1))
+            return (hand_rank_values['four-of-a-kind'], RANKS.index(rank), top_k_cards([rank], 1))
 
     # Full House
     three_kind = None
@@ -80,42 +101,36 @@ def evaluate_hand(hand, community_cards):
             three_kind = rank
 
     if three_kind:
-        pairs = [rank for rank, count in rank_counts.items() if count == 2 or (count == 3 and rank != three_kind)]
+        threes_cards = [card for card in all_cards if card.rank == three_kind][:3]
+        pairs = [rank for rank, count in rank_counts.items() if count == 2]
+        pair_cards = [card for card in all_cards if card.rank == pairs][:2]
         if pairs:
             top_pair = pairs[0]
-            three_cards = [card for card in all_cards if card.rank == three_kind][:3]
-            pair_cards = [card for card in all_cards if card.rank == top_pair][:2]
-            return ('full-house', three_kind, top_pair, three_cards + pair_cards)
+            return (hand_rank_values['full-house'], RANKS.index(three_kind), RANKS.index(top_pair), threes_cards + pair_cards)
 
-    # Flush
     if flush_suit:
         flush_cards = sorted([card for card in all_cards if card.suit == flush_suit], key=lambda card: RANKS.index(card.rank), reverse=True)[:5]
-        return ('flush', flush_cards[0].rank, flush_cards)
+        return (hand_rank_values['flush'], [RANKS.index(card.rank) for card in flush_cards], flush_cards)
 
-    # Straight
     if is_straight:
         straight_cards = sorted([card for card in all_cards if RANKS.index(card.rank) >= RANKS.index(last_rank) and RANKS.index(card.rank) <= RANKS.index(last_rank) + 4], key=lambda card: RANKS.index(card.rank), reverse=True)
-        return ('straight', straight_cards[0].rank, straight_cards)
+        return (hand_rank_values['straight'], RANKS.index(straight_cards[0].rank), straight_cards)
 
-    # Three of a Kind
     if three_kind:
         cards = [card for card in all_cards if card.rank == three_kind][:3]
-        return ('three-of-a-kind', three_kind, cards + top_k_cards([three_kind], 2))
-
-    # Two Pair
-    pairs = [rank for rank, count in rank_counts.items() if count == 2]
+        return (hand_rank_values['three-of-a-kind'], RANKS.index(three_kind), cards + top_k_cards([three_kind], 2))
+    
+    pairs = sorted([rank for rank, count in rank_counts.items() if count == 2], reverse=True)
     if len(pairs) == 2:
         top_pair_cards = [card for card in all_cards if card.rank == pairs[0]][:2]
         bottom_pair_cards = [card for card in all_cards if card.rank == pairs[1]][:2]
-        return ('two-pair', pairs[0], pairs[1], top_pair_cards + bottom_pair_cards + top_k_cards(pairs, 1))
+        return (hand_rank_values['two-pair'], RANKS.index(pairs[0]), RANKS.index(pairs[1]), top_pair_cards + bottom_pair_cards + top_k_cards(pairs, 1))
 
-    # One Pair
     if len(pairs) == 1:
         pair_cards = [card for card in all_cards if card.rank == pairs[0]][:2]
-        return ('one-pair', pairs[0], pair_cards + top_k_cards(pairs, 3))
+        return (hand_rank_values['one-pair'], RANKS.index(pairs[0]), pair_cards + top_k_cards(pairs, 3))
 
-    # High Card
-    return ('high-card', all_cards[-1].rank, top_k_cards([], 5))
+    return (hand_rank_values['high-card'], RANKS.index(all_cards[-1].rank), top_k_cards([], 5))
 
 def main():
     while True:
@@ -132,28 +147,24 @@ def main():
         p1_eval = evaluate_hand(player1_hand, community_cards)
         p2_eval = evaluate_hand(player2_hand, community_cards)
 
-        def hand_ranking_value(hand_ranking):
-            hand_order = ['high-card', 'one-pair', 'two-pair', 'three-of-a-kind', 'straight', 'flush', 'full-house', 'four-of-a-kind', 'straight-flush', 'royal-flush']
-            return hand_order.index(hand_ranking[0])
-
         correct = False
-        if hand_ranking_value(p1_eval) == hand_ranking_value(p2_eval) and answer == 't':
+        print(f'p1 eval: {p1_eval}')
+        print(f'p2 eval: {p2_eval}')
+        if p1_eval == p2_eval and answer == 't':
             correct = True
-        elif hand_ranking_value(p1_eval) > hand_ranking_value(p2_eval) and answer == '1':
+        elif p1_eval > p2_eval and answer == '1':
             correct = True
-        elif hand_ranking_value(p1_eval) < hand_ranking_value(p2_eval) and answer == '2':
+        elif p1_eval < p2_eval and answer == '2':
             correct = True
 
         if correct:
-            if answer == '1':
-                print(f"Correct! Player 1's winning hand is: {' '.join(map(str, p1_eval[-1]))}")
-            elif answer == '2':
-                print(f"Correct! Player 2's winning hand is: {' '.join(map(str, p2_eval[-1]))}")
-            else:
-                print("Correct! It's a tie!")
-            print(f"Time taken: {end_time - start_time:.2f} seconds")
+            print("\033[92mCorrect!\033[0m")
         else:
-            print("Wrong! Try again.")
+            print("\033[91mWrong!\033[0m")
+        
+        print(f"Time taken: {end_time - start_time:.2f} seconds")
+        print(f"Player 1's hand is: {p1_eval[0]} {' '.join(map(str, p1_eval[-1]))}")
+        print(f"Player 2's hand is: {p2_eval[0]} {' '.join(map(str, p2_eval[-1]))}")
 
         play_again = input("Play again? (y/n): ")
         if play_again.lower() == 'n':
