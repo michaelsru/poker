@@ -17,9 +17,11 @@ class Card:
         return f'{self.rank}{self.suit}'
 
     def __lt__(self, other):
+        print(f'{RANKS.index(self.rank)} < {RANKS.index(other.rank)} {RANKS.index(self.rank) < RANKS.index(other.rank)}')
         return RANKS.index(self.rank) < RANKS.index(other.rank)
 
     def __gt__(self, other):
+        print(f'{RANKS.index(self.rank)} > {RANKS.index(other.rank)} {RANKS.index(self.rank) > RANKS.index(other.rank)}')
         return RANKS.index(self.rank) > RANKS.index(other.rank)
 
 def deal_cards():
@@ -38,6 +40,7 @@ def evaluate_hand(hand, community_cards):
     
     for card in all_cards:
         rank_counts[card.rank] += 1
+        print(f'rank_counts:{rank_counts}')
 
     def top_k_cards(excluded_ranks, k):
         return sorted([card for card in all_cards if card.rank not in excluded_ranks], key=lambda card: RANKS.index(card.rank), reverse=True)[:k]
@@ -92,7 +95,7 @@ def evaluate_hand(hand, community_cards):
     for rank, count in rank_counts.items():
         if count == 4:
             cards = [card for card in all_cards if card.rank == rank]
-            return (hand_rank_values['four-of-a-kind'], RANKS.index(rank), top_k_cards([rank], 1))
+            return (hand_rank_values['four-of-a-kind'], RANKS.index(rank), cards + top_k_cards([rank], 1))
 
     # Full House
     three_kind = None
@@ -122,19 +125,23 @@ def evaluate_hand(hand, community_cards):
 
     if three_kind:
         cards = [card for card in all_cards if card.rank == three_kind][:3]
-        return (hand_rank_values['three-of-a-kind'], RANKS.index(three_kind), cards + top_k_cards([three_kind], 2))
+        return (hand_rank_values['three-of-a-kind'], RANKS.index(three_kind), cards + kicker_cards)
 
     pairs = [rank for rank, count in rank_counts.items() if count == 2][::-1]
+    print(f'pairs:{pairs}')
     if len(pairs) == 2:
         top_pair_cards = [card for card in all_cards if card.rank == pairs[0]][:2]
         bottom_pair_cards = [card for card in all_cards if card.rank == pairs[1]][:2]
-        return (hand_rank_values['two-pair'], RANKS.index(pairs[0]), RANKS.index(pairs[1]), top_pair_cards + bottom_pair_cards + top_k_cards(pairs, 1))
+        kicker_cards = top_k_cards(pairs, 1)
+        return (hand_rank_values['two-pair'], RANKS.index(pairs[0]), RANKS.index(pairs[1]), *[RANKS.index(card.rank) for card in kicker_cards], top_pair_cards + bottom_pair_cards + kicker_cards)
 
     if len(pairs) == 1:
         pair_cards = [card for card in all_cards if card.rank == pairs[0]][:2]
-        return (hand_rank_values['one-pair'], RANKS.index(pairs[0]), pair_cards + top_k_cards(pairs, 3))
+        kicker_cards = top_k_cards(pairs, 3)
+        return (hand_rank_values['one-pair'], RANKS.index(pairs[0]), *[RANKS.index(card.rank) for card in kicker_cards], pair_cards + kicker_cards)
 
-    return (hand_rank_values['high-card'], RANKS.index(all_cards[-1].rank), top_k_cards([], 5))
+    kicker_cards = top_k_cards([], 5)
+    return (hand_rank_values['high-card'], RANKS.index(all_cards[-1].rank), *[RANKS.index(card.rank) for card in kicker_cards], kicker_cards)
 
 def main():
     total_games = 0
