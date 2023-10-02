@@ -103,8 +103,8 @@ def evaluate_hand(hand, community_cards):
     if three_kind:
         threes_cards = [card for card in all_cards if card.rank == three_kind][:3]
         pairs = [rank for rank, count in rank_counts.items() if count == 2]
-        pair_cards = [card for card in all_cards if card.rank == pairs[0]]
         if pairs:
+            pair_cards = [card for card in all_cards if card.rank == pairs[0]]
             top_pair = pairs[0]
             return (hand_rank_values['full-house'], RANKS.index(three_kind), RANKS.index(top_pair), threes_cards + pair_cards)
 
