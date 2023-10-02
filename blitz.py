@@ -103,7 +103,7 @@ def evaluate_hand(hand, community_cards):
     if three_kind:
         threes_cards = [card for card in all_cards if card.rank == three_kind][:3]
         pairs = [rank for rank, count in rank_counts.items() if count == 2]
-        pair_cards = [card for card in all_cards if card.rank == pairs][:2]
+        pair_cards = [card for card in all_cards if card.rank == pairs[0]]
         if pairs:
             top_pair = pairs[0]
             return (hand_rank_values['full-house'], RANKS.index(three_kind), RANKS.index(top_pair), threes_cards + pair_cards)
@@ -113,14 +113,18 @@ def evaluate_hand(hand, community_cards):
         return (hand_rank_values['flush'], [RANKS.index(card.rank) for card in flush_cards], flush_cards)
 
     if is_straight:
-        straight_cards = sorted([card for card in all_cards if RANKS.index(card.rank) >= RANKS.index(last_rank) and RANKS.index(card.rank) <= RANKS.index(last_rank) + 4], key=lambda card: RANKS.index(card.rank), reverse=True)
+        unique_ranks = set()
+        for card in all_cards:
+            if RANKS.index(card.rank) >= RANKS.index(last_rank) and RANKS.index(card.rank) <= RANKS.index(last_rank) + 4:
+                unique_ranks.add(card.rank)
+        straight_cards = sorted([card for card in all_cards if card.rank in unique_ranks], key=lambda card: RANKS.index(card.rank), reverse=True)
         return (hand_rank_values['straight'], RANKS.index(straight_cards[0].rank), straight_cards)
 
     if three_kind:
         cards = [card for card in all_cards if card.rank == three_kind][:3]
         return (hand_rank_values['three-of-a-kind'], RANKS.index(three_kind), cards + top_k_cards([three_kind], 2))
 
-    pairs = sorted([rank for rank, count in rank_counts.items() if count == 2], reverse=True)
+    pairs = [rank for rank, count in rank_counts.items() if count == 2][::-1]
     if len(pairs) == 2:
         top_pair_cards = [card for card in all_cards if card.rank == pairs[0]][:2]
         bottom_pair_cards = [card for card in all_cards if card.rank == pairs[1]][:2]
