@@ -23,5 +23,5 @@ Enter t if you think it's a tie.
 The game will tell you if you're correct and will display the winning hand:
 
 ```
-Correct! Player 1's winning hand is: 10♠ 10♣ 10♦ 8♠ 7♠
+Correct! Player 1's winning hand is: 10♠ 10♣ 10♦ 7♣ 7♠
 ```
