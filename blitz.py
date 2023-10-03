@@ -125,11 +125,12 @@ def evaluate_hand(hand, community_cards):
 
     if three_kind:
         cards = [card for card in all_cards if card.rank == three_kind][:3]
+        kicker_cards = top_k_cards(cards, 2)
         return (hand_rank_values['three-of-a-kind'], RANKS.index(three_kind), cards + kicker_cards)
 
     pairs = [rank for rank, count in rank_counts.items() if count == 2][::-1]
     print(f'pairs:{pairs}')
-    if len(pairs) == 2:
+    if len(pairs) >= 2:
         top_pair_cards = [card for card in all_cards if card.rank == pairs[0]][:2]
         bottom_pair_cards = [card for card in all_cards if card.rank == pairs[1]][:2]
         kicker_cards = top_k_cards(pairs, 1)
