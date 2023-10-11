@@ -17,12 +17,19 @@ class Card:
         return f'{self.rank}{self.suit}'
 
     def __lt__(self, other):
-        print(f'{RANKS.index(self.rank)} < {RANKS.index(other.rank)} {RANKS.index(self.rank) < RANKS.index(other.rank)}')
+        # print(f'{RANKS.index(self.rank)} < {RANKS.index(other.rank)} {RANKS.index(self.rank) < RANKS.index(other.rank)}')
         return RANKS.index(self.rank) < RANKS.index(other.rank)
 
     def __gt__(self, other):
-        print(f'{RANKS.index(self.rank)} > {RANKS.index(other.rank)} {RANKS.index(self.rank) > RANKS.index(other.rank)}')
+        # print(f'{RANKS.index(self.rank)} > {RANKS.index(other.rank)} {RANKS.index(self.rank) > RANKS.index(other.rank)}')
         return RANKS.index(self.rank) > RANKS.index(other.rank)
+    
+    def __eq__(self, other):
+        # print(f'self:{self}')
+        # print(f'self type:{type(self)}')
+        # print(f'other:{other}')
+        # print(f'other type:{type(other)}')
+        return RANKS.index(self.rank) == RANKS.index(other)
 
 def deal_cards():
     deck = [Card(rank, suit) for rank in RANKS for suit in SUITS]
@@ -34,15 +41,25 @@ def deal_cards():
 
     return player1_hand, player2_hand, community_cards
 
+def deal_trips():
+    player1_hand = [Card('10', '♦'), Card('10', '♣')]
+    player2_hand = [Card('9', '♦'), Card('9', '♣')]
+
+    community_cards = [Card(rank, '♥') for rank in ['2', '3', '4', '5', '10']]
+
+    return player1_hand, player2_hand, community_cards
+
 def evaluate_hand(hand, community_cards):
     all_cards = sorted(hand + community_cards, key=lambda card: (RANKS.index(card.rank), card.suit))
     rank_counts = {rank: 0 for rank in RANKS}
+    # print(rank_counts)
     
     for card in all_cards:
         rank_counts[card.rank] += 1
-        print(f'rank_counts:{rank_counts}')
+        # print(f'rank_counts:{rank_counts}')
 
     def top_k_cards(excluded_ranks, k):
+        # print(f'excluded ranks:{excluded_ranks}')
         return sorted([card for card in all_cards if card.rank not in excluded_ranks], key=lambda card: RANKS.index(card.rank), reverse=True)[:k]
 
     # Check for a flush
@@ -129,7 +146,7 @@ def evaluate_hand(hand, community_cards):
         return (hand_rank_values['three-of-a-kind'], RANKS.index(three_kind), cards + kicker_cards)
 
     pairs = [rank for rank, count in rank_counts.items() if count == 2][::-1]
-    print(f'pairs:{pairs}')
+    # print(f'pairs:{pairs}')
     if len(pairs) >= 2:
         top_pair_cards = [card for card in all_cards if card.rank == pairs[0]][:2]
         bottom_pair_cards = [card for card in all_cards if card.rank == pairs[1]][:2]
@@ -151,6 +168,7 @@ def main():
 
     while True:
         player1_hand, player2_hand, community_cards = deal_cards()
+        # player1_hand, player2_hand, community_cards = deal_trips()
 
         print("Community Cards:", ' '.join(map(str, community_cards)))
         print("\nPlayer 1's Hand:", ' '.join(map(str, player1_hand)))
@@ -168,8 +186,8 @@ def main():
         p2_eval = evaluate_hand(player2_hand, community_cards)
 
         correct = False
-        print(f'p1 eval: {p1_eval}')
-        print(f'p2 eval: {p2_eval}')
+        # print(f'p1 eval: {p1_eval}')
+        # print(f'p2 eval: {p2_eval}')
         if p1_eval == p2_eval and answer == 't':
             correct = True
         elif p1_eval > p2_eval and answer == '1':
